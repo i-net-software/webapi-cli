@@ -6,41 +6,40 @@ any WebAPI endpoint without hardcoding URLs or schemas.
 
 ## Prerequisites
 
-1. **Python 3.10+** — most systems include it. Check with `python3 --version`.
-2. **pipx** — isolates CLI tools so they don't conflict with other Python packages.
+1. **uv** — the package manager that runs the CLI. Install it once:
 
    ```bash
-   # macOS
-   brew install pipx && pipx ensurepath
+   # macOS / Linux
+   curl -LsSf https://astral.sh/uv/install.sh | sh
 
    # Windows (PowerShell)
-   winget install pipx   # then restart your terminal
+   powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
 
-   # Windows (scoop)
-   scoop install pipx && pipx ensurepath
+   # macOS via Homebrew
+   brew install uv
 
-   # Linux (Debian/Ubuntu)
-   sudo apt update && sudo apt install pipx && pipx ensurepath
-
-   # Linux (Fedora)
-   sudo dnf install pipx && pipx ensurepath
+   # Windows via winget
+   winget install --id=astral-sh.uv -e
    ```
 
-   After running `pipx ensurepath`, close and reopen your terminal.
+   After installing, restart your terminal.
 
-3. A **Bearer token** with WebAPI access (see [Getting a Bearer token](#getting-a-bearer-token))
+2. A **Bearer token** with WebAPI access (see [Getting a Bearer token](#getting-a-bearer-token))
 
 ## Installation
 
 ```bash
-# Install via pipx (recommended — isolates the CLI and its dependencies)
-pipx install webapi-cli -i https://pypi.org/simple
+# Install globally from GitHub
+uv tool install --from git+https://github.com/i-net-software/webapi-cli webapi-cli
 
-# Or from a local wheel file
-pipx install /path/to/webapi_cli-1.0.0-py3-none-any.whl
+# Or from a local wheel
+uv tool install /path/to/webapi_cli-1.0.0-py3-none-any.whl
 
-# Or from source (dev only)
-cd WebAPICLI && pipx install .
+# Or from a local checkout
+uv tool install /path/to/WebAPICLI
+
+# Or one-shot — no install needed (credentials still persist)
+uvx --from git+https://github.com/i-net-software/webapi-cli webapi discover
 ```
 
 Verify it's on your PATH:
@@ -242,15 +241,13 @@ After installing, `<Tab>` auto-completes tool names by querying the server.
 ## Updating
 
 ```bash
-pipx upgrade webapi-cli
+uv tool upgrade webapi-cli
 ```
 
 ## Uninstalling
 
 ```bash
-pipx uninstall webapi-cli
-# Your config and tokens remain in ~/.config/webapi-cli/ — delete that folder
-# manually if you want to remove all traces.
+uv tool uninstall webapi-cli
 ```
 
 ## For Developers
