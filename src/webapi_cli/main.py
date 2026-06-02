@@ -86,6 +86,42 @@ def _make_client(cfg: Config, server: str | None = None) -> McpClient:
     return McpClient(url, profile.bearer_token)
 
 
+def _describe_tool(client: McpClient, tool: str, pretty_print: bool) -> None:
+    """Fetch the tool definition and print its parameter schema.
+
+    Used after a failed tool call to show expected parameters.
+    """
+    try:
+        tools = client.list_tools()
+    except Exception:
+        return
+    match = [t for t in tools if t.get("name") == tool]
+    if not match:
+        return
+    console.print()
+    console.print("[bold]Expected parameters:[/bold]")
+    format_tool_detail(match[0], pretty_print=pretty_print)
+
+
+def _describe_tool_after_close(
+    cfg: Config, server: str | None, tool: str, pretty_print: bool
+) -> None:
+    """Describe a tool using a fresh client (called after client is closed)."""
+    try:
+        c2 = _make_client(cfg, server)
+        c2.initialize()
+        tools = c2.list_tools()
+        c2.close()
+    except Exception:
+        return
+    match = [t for t in tools if t.get("name") == tool]
+    if not match:
+        return
+    console.print()
+    console.print("[bold]Expected parameters:[/bold]")
+    format_tool_detail(match[0], pretty_print=pretty_print)
+
+
 # ------------------------------------------------------------------
 # login
 # ------------------------------------------------------------------
@@ -316,11 +352,15 @@ def call(
         result = client.call_tool(tool, arguments)
     except McpError as exc:
         typer.echo(f"Tool call failed: {exc}", err=True)
+        _describe_tool(client, tool, pretty_print)
         raise typer.Exit(1)
     finally:
         client.close()
 
     format_tool_result(result, pretty_print=pretty_print)
+
+    if result.get("isError"):
+        _describe_tool_after_close(cfg, server, tool, pretty_print)
 
 
 # ------------------------------------------------------------------
