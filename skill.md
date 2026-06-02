@@ -71,7 +71,7 @@ webapi call cowork__teams__team__channels__channel__messages__post \
 
 ### Raw output for piping
 ```bash
-webapi call --pretty-print ticket__search__post --params '{"query":"bug"}' | jq .
+webapi call --raw ticket__search__post --params '{"query":"bug"}' | jq .
 ```
 
 ### Multiple servers
@@ -109,7 +109,7 @@ Use `webapi describe <tool>` before calling to see the exact schema.
 
 - Run `webapi discover` first — tool names might differ between server versions
 - If a call fails with HTTP 401/403, your Bearer token may have expired; run `webapi login` again
-- Use `--pretty-print` to see the full server response for debugging
+- Use `--raw` to see the full server response for debugging
 - Pipe errors to stderr for scripts: `webapi call ... 2>/dev/null`
 
 ## Cross-referencing

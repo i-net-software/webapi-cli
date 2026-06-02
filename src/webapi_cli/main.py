@@ -32,9 +32,9 @@ app = typer.Typer(
     no_args_is_help=True,
 )
 
-_pretty_opt = Annotated[
+_raw_opt = Annotated[
     bool,
-    typer.Option("--pretty-print", help="Pretty-print JSON output with indentation."),
+    typer.Option("--raw", "-r", help="Output raw JSON (no formatting)."),
 ]
 
 ServerURL = Annotated[
@@ -213,7 +213,7 @@ def logout() -> None:
 
 @app.command()
 def discover(
-    pretty_print: _pretty_opt = False,
+    raw: _raw_opt = False,
     server: ServerURL = None,
     refresh: Annotated[
         bool,
@@ -233,7 +233,7 @@ def discover(
     finally:
         client.close()
 
-    format_tool_list(tools, client.base_url, pretty_print=pretty_print)
+    format_tool_list(tools, client.base_url, raw=raw)
 
 
 # ------------------------------------------------------------------
@@ -246,7 +246,7 @@ def describe(
         str,
         typer.Argument(help="Tool name to describe.", autocompletion=tool_name_completer),
     ],
-    pretty_print: _pretty_opt = False,
+    raw: _raw_opt = False,
     server: ServerURL = None,
 ) -> None:
     """Show the full parameter schema for a tool."""
@@ -267,7 +267,7 @@ def describe(
         console.print(f"[red]Tool '{tool}' not found. Run [bold]webapi discover[/bold] to list tools.[/red]")
         raise typer.Exit(1)
 
-    format_tool_detail(match[0], pretty_print=pretty_print)
+    format_tool_detail(match[0], raw=raw)
 
 
 # ------------------------------------------------------------------
@@ -282,7 +282,7 @@ def call(
     ],
     params: ParamsOpt = None,
     body: BodyOpt = None,
-    pretty_print: _pretty_opt = False,
+    raw: _raw_opt = False,
     server: ServerURL = None,
 ) -> None:
     """Invoke an MCP tool (WebAPI endpoint)."""
@@ -320,7 +320,7 @@ def call(
     finally:
         client.close()
 
-    format_tool_result(result, pretty_print=pretty_print)
+    format_tool_result(result, raw=raw)
 
 
 # ------------------------------------------------------------------
@@ -333,11 +333,11 @@ app.add_typer(profiles_app, name="profiles")
 
 @profiles_app.callback(invoke_without_command=True)
 def profiles_callback(
-    pretty_print: _pretty_opt = False,
+    raw: _raw_opt = False,
 ) -> None:
     """List all configured profiles."""
     cfg = Config.load()
-    format_profiles(cfg, pretty_print=pretty_print)
+    format_profiles(cfg, raw=raw)
 
 
 @profiles_app.command(name="use")
