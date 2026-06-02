@@ -107,12 +107,12 @@ Tool names are derived from URL path segments + HTTP method
 
 ```bash
 webapi discover                 # table format
-webapi discover --raw | jq .    # machine-readable JSON
+webapi discover --pretty-print | jq .    # machine-readable JSON
 webapi discover -s https://dev.example.com   # one-off server override
 ```
 
 Options:
-- `--raw, -r` — output raw JSON
+- `--pretty-print` — output raw JSON
 - `--refresh, -f` — bypass cache and re-fetch
 - `--server, -s` — override server URL for this call
 
@@ -123,7 +123,7 @@ their types, and descriptions (all from the server's OpenAPI spec).
 
 ```bash
 webapi describe ticket__ticket__post
-webapi describe --raw ticket__ticket__post
+webapi describe --pretty-print ticket__ticket__post
 ```
 
 ### `webapi call <tool>`
@@ -144,13 +144,13 @@ webapi call ticket__id__post \
   --body '{"subject":"Hello","priority":2}'
 
 # Raw output for scripting
-webapi call --raw ticket__search__post --params '{"query":"bug"}' | jq '.body[0].subject'
+webapi call --pretty-print ticket__search__post --params '{"query":"bug"}' | jq '.body[0].subject'
 ```
 
 Options:
 - `--params, -p` — JSON object for query/path parameters
 - `--body, -b` — JSON object or string for the request body
-- `--raw, -r` — output raw JSON (no formatting)
+- `--pretty-print` — output raw JSON (no formatting)
 - `--server, -s` — override server URL for this call
 
 ### `webapi profiles`
@@ -236,7 +236,7 @@ After installing, `<Tab>` auto-completes tool names by querying the server.
 | `HTTP 401` / `Unauthorized` | Your Bearer token may have expired. Run `webapi login` to update it. |
 | `Tool not found` | Run `webapi discover` — tool names might differ between server versions |
 | `Connection failed` | Check the server URL is correct and reachable. Verify the `/mcp` endpoint exists (HelpDesk 26.10+). |
-| Need to debug raw responses | Use `--raw` to see the full JSON response |
+| Need to debug raw responses | Use `--pretty-print` to see the full JSON response |
 
 ## Updating
 

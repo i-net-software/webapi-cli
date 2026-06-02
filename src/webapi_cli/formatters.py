@@ -16,15 +16,15 @@ console = Console()
 # Tool list (discover)
 # ------------------------------------------------------------------
 
-def format_tool_list(tools: list[dict[str, Any]], server: str, raw: bool = False) -> None:
+def format_tool_list(tools: list[dict[str, Any]], server: str, pretty_print: bool = False) -> None:
     """Print a formatted table of available MCP tools.
 
     Args:
         tools: List of tool definition dicts from ``tools/list``.
         server: Server URL for the header.
-        raw: If True, output raw JSON instead of a table.
+        pretty_print: If True, output raw JSON instead of a table.
     """
-    if raw:
+    if pretty_print:
         sys.stdout.write(json.dumps(tools, indent=2, ensure_ascii=False) + "\n")
         return
 
@@ -51,14 +51,14 @@ def format_tool_list(tools: list[dict[str, Any]], server: str, raw: bool = False
 # Tool detail (describe)
 # ------------------------------------------------------------------
 
-def format_tool_detail(tool: dict[str, Any], raw: bool = False) -> None:
+def format_tool_detail(tool: dict[str, Any], pretty_print: bool = False) -> None:
     """Print detailed information about a single tool.
 
     Args:
         tool: A single tool definition dict.
-        raw: If True, output raw JSON.
+        pretty_print: If True, output raw JSON.
     """
-    if raw:
+    if pretty_print:
         sys.stdout.write(json.dumps(tool, indent=2, ensure_ascii=False) + "\n")
         return
 
@@ -224,14 +224,14 @@ def _format_type(pinfo: dict[str, Any], _recurse: bool = True) -> str:
 # Tool call result
 # ------------------------------------------------------------------
 
-def format_tool_result(result: dict[str, Any], raw: bool = False) -> None:
+def format_tool_result(result: dict[str, Any], pretty_print: bool = False) -> None:
     """Format the result of a tool invocation.
 
     Args:
         result: The ``result`` object from a ``tools/call`` response.
-        raw: If True, output raw JSON.
+        pretty_print: If True, output raw JSON.
     """
-    if raw:
+    if pretty_print:
         sys.stdout.write(json.dumps(result, indent=2, ensure_ascii=False) + "\n")
         return
 
@@ -248,28 +248,19 @@ def format_tool_result(result: dict[str, Any], raw: bool = False) -> None:
             console.print(entry.get("text", ""))
             break
 
-    # Then the structured body
-    body = structured.get("body")
-    if body is not None:
-        console.print()
-        if isinstance(body, (dict, list)):
-            console.print(json.dumps(body, indent=2, ensure_ascii=False))
-        else:
-            console.print(str(body)[:2000])
-
 
 # ------------------------------------------------------------------
 # Profiles
 # ------------------------------------------------------------------
 
-def format_profiles(config: Any, raw: bool = False) -> None:
+def format_profiles(config: Any, pretty_print: bool = False) -> None:
     """Print the list of configured profiles.
 
     Args:
         config: The Config instance.
-        raw: If True, output raw JSON.
+        pretty_print: If True, output raw JSON.
     """
-    if raw:
+    if pretty_print:
         payload = {
             "current_profile": config.current_profile,
             "profiles": {
