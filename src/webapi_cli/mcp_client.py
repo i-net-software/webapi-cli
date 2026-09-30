@@ -62,7 +62,7 @@ class McpClient:
         """Create a new MCP client.
 
         Args:
-            server_url: Base URL of the server (e.g. ``https://helpdesk.example.com``).
+            server_url: Base URL of the server (e.g. ``https://server.example.com``).
             bearer_token: Optional Bearer token for authentication.
         """
         self.base_url = server_url.rstrip("/")

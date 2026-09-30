@@ -2,28 +2,25 @@
 
 ## Overview
 
-The `webapi` CLI tool lets you interact with any i-net HelpDesk server's Web
-API through its MCP (Model Context Protocol) endpoint.  You can discover
-available endpoints, inspect their parameters, and invoke them — all through a
-simple command-line interface.
+The `webapi` CLI tool connects to i-net product servers from version 26.10 through the shared WebAPI Core MCP endpoint. It discovers the API operations and schemas available to your account, then lets you inspect and invoke them from the command line.
 
 ## Installation
 
+Install from GitHub with `uv`:
 ```bash
-pipx install webapi-cli
+uv tool install --from git+https://github.com/i-net-software/webapi-cli webapi-cli
 ```
 
-Or from source:
-```bash
-cd WebAPICLI && pip install .
-```
+From a local checkout, run `uv tool install .` in the repository root.
 
 ## Quick Start
 
-1. **Log in** (one-time setup per server):
+1. **Log in** to your server:
    ```bash
-   webapi login --server https://helpdesk.example.com --token <your-bearer-token>
+   webapi login --server https://server.example.com
    ```
+
+   Enter your access token when prompted.
 
 2. **Discover available tools**:
    ```bash
@@ -55,6 +52,8 @@ cd WebAPICLI && pip install .
 
 ## Common Usage Patterns
 
+The tool names below are examples from the i-net CoWork and i-net HelpDesk Web APIs. Run `webapi discover` to see which tools your server provides.
+
 ### Read data (GET endpoints)
 ```bash
 webapi call cowork__teams__get
@@ -77,7 +76,7 @@ webapi call --pretty-print ticket__search__post --params '{"query":"bug"}' | jq 
 ### Multiple servers
 ```bash
 webapi login --server https://dev.example.com --token ... --profile dev
-webapi login --server https://helpdesk.example.com --token ... --profile prod
+webapi login --server https://production.example.com --token ... --profile prod
 webapi profiles use prod
 webapi discover -s https://dev.example.com  # One-off server override
 ```
@@ -107,7 +106,7 @@ Use `webapi describe <tool>` before calling to see the exact schema.
 
 ## Error Handling
 
-- Run `webapi discover` first — tool names might differ between server versions
+- Run `webapi discover` first. Tool names may differ between server versions.
 - If a call fails with HTTP 401/403, your Bearer token may have expired; run `webapi login` again
 - Use `--pretty-print` to see the full server response for debugging
 - Pipe errors to stderr for scripts: `webapi call ... 2>/dev/null`

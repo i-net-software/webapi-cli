@@ -1,257 +1,243 @@
-# WebAPI CLI
+# i-net WebAPI CLI
 
-Command-line client for i-net HelpDesk Web API servers.  
-Uses the server's **MCP endpoint** (`/mcp`) to dynamically discover and invoke
-any WebAPI endpoint without hardcoding URLs or schemas.
+The `webapi` command-line client lets you discover and use API operations published by an i-net server. It connects to the server's Model Context Protocol endpoint at `/mcp` and reads the tools and schemas available to your account. Use it in a terminal, in scripts, or from an AI coding assistant.
 
-## Prerequisites
+## Product support
 
-1. **uv** — the package manager that runs the CLI. Install it once:
+The WebAPI CLI is available for i-net product servers from version 26.10. It connects through the shared WebAPI Core MCP endpoint at `/mcp`. This includes i-net HelpDesk, i-net Clear Reports, i-net PDFC, i-net CoWork, and other i-net products that provide the endpoint. The server determines which tools are available. The list depends on the product, installed extensions, server version, MCP configuration, and your account permissions.
 
-   ```bash
-   # macOS / Linux
-   curl -LsSf https://astral.sh/uv/install.sh | sh
+## What you need
 
-   # Windows (PowerShell)
-   powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+- An i-net server that exposes the WebAPI Core MCP endpoint at `/mcp`.
+- A Bearer access token with Web API access and permission to use the API contexts you need.
+- `uv` to install and run the CLI. The project requires Python 3.10 or later.
 
-   # macOS via Homebrew
-   brew install uv
+The CLI appends `/mcp` to the server URL you enter. Include the server's context path in the URL when it has one.
 
-   # Windows via winget
-   winget install --id=astral-sh.uv -e
-   ```
+## Install
 
-   After installing, restart your terminal.
-
-2. A **Bearer token** with WebAPI access (see [Getting a Bearer token](#getting-a-bearer-token))
-
-## Installation
+Install `uv` if it is not already available on your system:
 
 ```bash
-# Install globally from GitHub
+# macOS or Linux
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Windows PowerShell
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+
+# macOS with Homebrew
+brew install uv
+
+# Windows with winget
+winget install --id=astral-sh.uv -e
+```
+
+Install the CLI from GitHub:
+
+```bash
 uv tool install --from git+https://github.com/i-net-software/webapi-cli webapi-cli
+```
 
-# Or from a local wheel
-uv tool install /path/to/webapi_cli-1.0.0-py3-none-any.whl
+To use the CLI without a permanent installation, run each command with `uvx`. Connect to a server first:
 
-# Or from a local checkout
-uv tool install /path/to/WebAPICLI
-
-# Or one-shot — no install needed (credentials still persist)
+```bash
+uvx --from git+https://github.com/i-net-software/webapi-cli webapi login
 uvx --from git+https://github.com/i-net-software/webapi-cli webapi discover
 ```
 
-Verify it's on your PATH:
+Check the installation:
 
 ```bash
 webapi --help
 ```
 
-## Getting a Bearer token
+## Connect to your server
 
-You need a Bearer token that grants access to the Web API.  Generate one in the
-HelpDesk administration UI:
+Create an access token in your server's administration interface. Select the Web API access permission and the permissions for the API contexts you want to use. Available permissions depend on your account and the APIs installed on the server. Ask your server administrator if you need a token or additional permissions.
 
-1. Log in to your HelpDesk server as an administrator
-2. Navigate to **Administration → Web API → Bearer Tokens**
-3. Click **Create token**, give it a name, and select the WebAPI permissions
-   you need (e.g. `WebAPI - cowork`, `WebAPI - tickets`)
-4. Copy the generated token — it's shown only once
-
-> **Tip:** Create a dedicated token for your CLI usage so you can revoke it
-> independently.  If you use multiple servers (dev/staging/prod), generate
-> one token per server.
-
-## Quick Start (2 minutes)
+Run the interactive login command:
 
 ```bash
-# 1. Authenticate — interactive, asks for server URL and token
 webapi login
+```
 
-# 2. See what's available
+Enter the server URL and access token when prompted. The token entry is hidden. The CLI checks the connection and saves a profile for later use.
+
+You can provide the server URL and profile name in the command. The CLI still prompts for the token:
+
+```bash
+webapi login --server https://server.example.com --profile production
+```
+
+## Quick start
+
+List the tools available to your account:
+
+```bash
 webapi discover
-
-# 3. Inspect a tool's parameters
-webapi describe cowork__teams__get
-
-# 4. Call a tool
-webapi call cowork__teams__get
-webapi call ticket__search__post --params '{"query":"login error","limit":5}'
 ```
 
-## Command Reference
-
-### `webapi login`
-
-Interactive setup for one or more servers.  Prompts for the server URL and
-Bearer token, tests the connection, and stores credentials in
-`~/.config/webapi-cli/config.json` (permissions `0600`).
+Choose a tool from the list, then inspect its parameters:
 
 ```bash
-webapi login                          # interactive
-webapi login --server https://dev.example.com --token abc123 --profile dev
-webapi login --profile staging        # re-authenticate an existing profile
+webapi describe TOOL_NAME
 ```
 
-Options:
-- `--server, -s` — server base URL
-- `--token, -t`  — Bearer token (omit to enter interactively; input is hidden)
-- `--profile, -P` — profile name (default: `"default"`)
-
-### `webapi discover`
-
-Lists every WebAPI endpoint the server exposes as an MCP tool.  
-Tool names are derived from URL path segments + HTTP method
-(e.g. `GET /api/cowork/teams` → `cowork__teams__get`).
+Replace `TOOL_NAME` with a name returned by `webapi discover`. Call the tool with the parameters shown by `webapi describe`:
 
 ```bash
-webapi discover                 # table format
-webapi discover --pretty-print | jq .    # machine-readable JSON
-webapi discover -s https://dev.example.com   # one-off server override
+webapi call TOOL_NAME --params '{"id":"123"}'
 ```
 
-Options:
-- `--pretty-print` — output raw JSON
-- `--refresh, -f` — bypass cache and re-fetch
-- `--server, -s` — override server URL for this call
-
-### `webapi describe <tool>`
-
-Shows the full parameter schema for a tool — which arguments are required,
-their types, and descriptions (all from the server's OpenAPI spec).
+For an operation that requires a request body, pass it with `--body`:
 
 ```bash
-webapi describe ticket__ticket__post
-webapi describe --pretty-print ticket__ticket__post
+webapi call TOOL_NAME --body '{"name":"Example"}'
 ```
 
-### `webapi call <tool>`
+A call runs with your account's Web API permissions. Some API operations can change server data, so review the tool description and parameters before calling it.
 
-Invokes any MCP tool.  Pass path/query parameters with `--params` and the
-request body with `--body`.
+## Use the CLI
+
+### Discover tools
+
+`webapi discover` lists the tools exposed by the server. Tool definitions come from the server's Web API description, so the available tools can differ between products and server versions.
 
 ```bash
-# GET — query parameters only
-webapi call ticket__search__post --params '{"query":"password reset"}'
-
-# GET with path parameter
-webapi call ticket__id__get --params '{"id":"12345"}'
-
-# POST with body
-webapi call ticket__id__post \
-  --params '{"id":"12345"}' \
-  --body '{"subject":"Hello","priority":2}'
-
-# Raw output for scripting
-webapi call --pretty-print ticket__search__post --params '{"query":"bug"}' | jq '.body[0].subject'
+webapi discover
+webapi discover --refresh
+webapi discover --pretty-print | jq .
+webapi discover --server https://server.example.com
 ```
 
-Options:
-- `--params, -p` — JSON object for query/path parameters
-- `--body, -b` — JSON object or string for the request body
-- `--pretty-print` — output raw JSON (no formatting)
-- `--server, -s` — override server URL for this call
+### Inspect a tool
 
-### `webapi profiles`
-
-Manage multiple server profiles (e.g. dev, staging, production).
+`webapi describe` shows a tool's description, required parameters, types, and input schema.
 
 ```bash
-webapi profiles            # list all profiles
-webapi profiles use prod   # switch active profile
-webapi profiles remove dev # delete a profile
+webapi describe TOOL_NAME
+webapi describe --pretty-print TOOL_NAME
 ```
 
-### `webapi logout`
+### Call a tool
 
-Destroys the remote MCP session and clears the stored Bearer token for the
-active profile.
+Pass path and query parameters with `--params`. Pass a request body with `--body`.
+
+```bash
+# Parameters
+webapi call TOOL_NAME --params '{"id":"123","limit":5}'
+
+# Request body
+webapi call TOOL_NAME --body '{"name":"Example"}'
+
+# Parameters and request body
+webapi call TOOL_NAME --params '{"id":"123"}' --body '{"name":"Example"}'
+
+# JSON output for scripts
+webapi call --pretty-print TOOL_NAME --params '{"id":"123"}' | jq .
+```
+
+Replace `TOOL_NAME` and the example parameters with values from your server's tool list and schema.
+
+### Manage server profiles
+
+Profiles let you save connections for development, test, and production servers.
+
+```bash
+# Add a profile
+webapi login --server https://dev.example.com --profile dev
+webapi login --server https://production.example.com --profile production
+
+# List and switch profiles
+webapi profiles
+webapi profiles use production
+
+# Use another server for one command
+webapi discover --server https://test.example.com
+
+# Show the current server and account
+webapi whoami
+
+# Remove a profile
+webapi profiles remove dev
+```
+
+### Sign out
+
+`webapi logout` ends the remote MCP session and removes the saved token for the active profile.
 
 ```bash
 webapi logout
 ```
 
-### `webapi whoami`
+### Shell completion
 
-Shows the current profile, server URL, application name, and version.
+Install or preview tab completion for your current shell:
 
 ```bash
-webapi whoami
+webapi --install-completion
+webapi --show-completion
 ```
 
-## Tool Naming Convention
+Completion uses the tool list from the active server.
 
-Tools follow the pattern `path__segments__http_method`:
+## Tool names
 
-| REST endpoint | Tool name |
+Tool names are generated from the API path and HTTP method. Path parameters become name segments without braces.
+
+| Web API operation | Tool name |
 |---|---|
 | `GET /api/cowork/teams` | `cowork__teams__get` |
 | `GET /api/cowork/teams/{team}/channels` | `cowork__teams__team__channels__get` |
 | `POST /api/ticket/search` | `ticket__search__post` |
-| `DELETE /api/cowork/teams/{team}/channels/{channel}/messages/{message}` | `cowork__teams__team__channels__channel__messages__message__delete` |
 
-Path parameter tokens like `{id}` are stripped of braces and special
-characters.  Always run `webapi discover` or `webapi describe` first —
-names are generated deterministically from the server's OpenAPI spec and may
-vary between versions.
+These examples come from different API contexts. The tool names available on your server may differ. Run `webapi discover` and use the exact name shown there.
 
-## Working with Multiple Servers
+## Scripting and development
 
-```bash
-# Add profiles
-webapi login --server https://dev-helpdesk.example.com  --token <tok1> --profile dev
-webapi login --server https://helpdesk.example.com       --token <tok2> --profile prod
+The CLI reads tool definitions and schemas from the server at runtime. You can use the same commands interactively or in scripts without generating a product-specific client.
 
-# Switch
-webapi profiles use dev
-
-# Run a one-off command against a different server
-webapi discover -s https://staging.example.com
-
-# Check which profile is active
-webapi whoami
-```
-
-## AI Agent Integration
-
-If you use AI coding assistants (opencode, Claude Code, Cursor, Copilot,
-etc.), point them to [skill.md](skill.md) for instructions on integrating
-the WebAPI CLI into their tool set.
-
-## Shell Completion
+For machine-readable output, add `--pretty-print` and pipe the JSON to tools such as `jq`:
 
 ```bash
-webapi --install-completion     # install for your current shell
-webapi --show-completion        # preview the completion script
+webapi discover --pretty-print | jq .
+webapi describe --pretty-print TOOL_NAME | jq .
+webapi call --pretty-print TOOL_NAME --params '{"id":"123"}' | jq .
 ```
 
-After installing, `<Tab>` auto-completes tool names by querying the server.
+The server applies its normal Web API authentication and permission checks to each operation. For details about an endpoint's behavior, parameters, and response fields, use the API documentation exposed by your server.
+
+## AI agent integration
+
+AI coding assistants can use the CLI to discover tools, inspect schemas, and call API operations. See [skill.md](skill.md) for setup instructions and examples.
+
+## Configuration and credentials
+
+The CLI stores server profiles and access tokens in `~/.config/webapi-cli/config.json`. Set `XDG_CONFIG_HOME` to use a different configuration directory. The CLI restricts file permissions where the operating system supports them.
+
+Use a separate profile for each server environment. You can remove a saved token at any time with `webapi logout` or delete its profile with `webapi profiles remove`.
 
 ## Troubleshooting
 
 | Problem | Solution |
-|---------|----------|
-| `No profile configured` | Run `webapi login` first |
-| `HTTP 401` / `Unauthorized` | Your Bearer token may have expired. Run `webapi login` to update it. |
-| `Tool not found` | Run `webapi discover` — tool names might differ between server versions |
-| `Connection failed` | Check the server URL is correct and reachable. Verify the `/mcp` endpoint exists (HelpDesk 26.10+). |
-| Need to debug raw responses | Use `--pretty-print` to see the full JSON response |
+|---|---|
+| No profile is configured | Run `webapi login` and connect to a server. |
+| Connection failed | Check the server URL and network access. Confirm that your product version exposes the `/mcp` endpoint. |
+| HTTP 401 or 403 | Check that the token is valid and has Web API access and permission for the requested API context. |
+| Tool not found | Run `webapi discover` and copy the exact tool name from the list. |
+| Tool call failed | Run `webapi describe TOOL_NAME` to check required parameters and request body fields. |
+| Need the complete response | Add `--pretty-print` to the command. |
 
-## Updating
+## Update or uninstall
+
+Upgrade the installed CLI:
 
 ```bash
 uv tool upgrade webapi-cli
 ```
 
-## Uninstalling
+Remove it:
 
 ```bash
 uv tool uninstall webapi-cli
 ```
-
-## For Developers
-
-See `skill.md` for AI agent integration instructions.  The `tests/` directory
-contains unit tests runnable with `pytest`.  The server-side code lives in
-`WebAPICore/src/com/inet/plugin/webapi/server/WebAPICoreMCPServlet.java`.

@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "webapi-cli"
 version = "1.0.0"
-description = "CLI client for the i-net HelpDesk Web API MCP endpoint"
+description = "CLI client for the i-net Web API MCP endpoint"
 readme = "README.md"
 license = { text = "Proprietary" }
 requires-python = ">=3.10"
@@ -14,7 +14,7 @@ dependencies = [
     "rich>=13.0",
     "httpx>=0.27",
 ]
-keywords = ["webapi", "mcp", "helpdesk", "cli", "ide"]
+keywords = ["webapi", "mcp", "i-net", "cli", "ide"]
 
 [project.scripts]
 webapi = "webapi_cli.main:app"

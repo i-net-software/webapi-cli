@@ -28,7 +28,7 @@ from .mcp_client import McpError
 
 app = typer.Typer(
     name="webapi",
-    help="CLI client for the i-net HelpDesk Web API MCP endpoint.",
+    help="CLI client for the i-net Web API MCP endpoint.",
     no_args_is_help=True,
 )
 
@@ -152,7 +152,7 @@ def login(
     if server is None:
         existing = cfg.get(profile_name)
         default_server = existing.server_url if existing else ""
-        server = typer.prompt("Server URL", default=default_server or "https://helpdesk.example.com")
+        server = typer.prompt("Server URL", default=default_server or "https://server.example.com")
 
     if token is None:
         if profile_name in cfg.profiles and cfg.profiles[profile_name].bearer_token:
