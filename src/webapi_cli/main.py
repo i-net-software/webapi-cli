@@ -52,23 +52,29 @@ BodyOpt = Annotated[
     typer.Option("--body", "-b", help="JSON object/string for the request body."),
 ]
 
+ProfileOpt = Annotated[
+    Optional[str],
+    typer.Option("--profile", "-P", help="Use this profile for this command (overrides the active profile)."),
+]
+
 
 # ------------------------------------------------------------------
 # Helper – get a ready-to-use MCP client
 # ------------------------------------------------------------------
 
-def _get_config() -> Config:
+def _get_config(profile: str | None = None) -> Config:
     cfg = Config.load()
-    if cfg.current_profile is None:
+    key = profile or cfg.current_profile
+    if key is None:
         typer.echo(
             "No profile configured.\n"
             "Run [bold]webapi login[/bold] to connect to a server.",
             err=True,
         )
         raise typer.Exit(1)
-    if cfg.get() is None:
+    if cfg.get(key) is None:
         typer.echo(
-            f"Profile '{cfg.current_profile}' not found.\n"
+            f"Profile '{key}' not found.\n"
             "Run [bold]webapi profiles[/bold] to list available profiles.",
             err=True,
         )
@@ -76,14 +82,14 @@ def _get_config() -> Config:
     return cfg
 
 
-def _make_client(cfg: Config, server: str | None = None) -> McpClient:
-    profile = cfg.get()
-    assert profile is not None
-    url = server or profile.server_url
+def _make_client(cfg: Config, server: str | None = None, profile: str | None = None) -> McpClient:
+    prof = cfg.get(profile)
+    assert prof is not None
+    url = server or prof.server_url
     if not url:
         typer.echo("No server URL configured.", err=True)
         raise typer.Exit(1)
-    return McpClient(url, profile.bearer_token)
+    return McpClient(url, prof.bearer_token)
 
 
 def _describe_tool(client: McpClient, tool: str, pretty_print: bool) -> None:
@@ -104,11 +110,11 @@ def _describe_tool(client: McpClient, tool: str, pretty_print: bool) -> None:
 
 
 def _describe_tool_after_close(
-    cfg: Config, server: str | None, tool: str, pretty_print: bool
+    cfg: Config, server: str | None, tool: str, pretty_print: bool, profile: str | None = None
 ) -> None:
     """Describe a tool using a fresh client (called after client is closed)."""
     try:
-        c2 = _make_client(cfg, server)
+        c2 = _make_client(cfg, server, profile)
         c2.initialize()
         tools = c2.list_tools()
         c2.close()
@@ -221,26 +227,32 @@ def login(
 # ------------------------------------------------------------------
 
 @app.command()
-def logout() -> None:
+def logout(
+    profile: ProfileOpt = None,
+) -> None:
     """Destroy the remote session and clear stored credentials."""
     cfg = Config.load()
-    profile = cfg.get()
-    if profile is None:
+    key = profile or cfg.current_profile
+    if key is None:
         typer.echo("No active profile.", err=True)
+        raise typer.Exit(1)
+    prof = cfg.get(key)
+    if prof is None:
+        typer.echo(f"Profile '{key}' not found.", err=True)
         raise typer.Exit(1)
 
     try:
-        client = _make_client(cfg)
+        client = _make_client(cfg, profile=key)
         client.initialize()
         client.close()
     except Exception:
         pass
 
-    profile.bearer_token = None
-    cfg.add(profile)
+    prof.bearer_token = None
+    cfg.add(prof)
     cfg.save()
 
-    console.print(f"Logged out of profile [bold]{cfg.current_profile}[/bold].")
+    console.print(f"Logged out of profile [bold]{key}[/bold].")
 
 
 # ------------------------------------------------------------------
@@ -251,14 +263,15 @@ def logout() -> None:
 def discover(
     pretty_print: _pretty_opt = False,
     server: ServerURL = None,
+    profile: ProfileOpt = None,
     refresh: Annotated[
         bool,
         typer.Option("--refresh", "-f", help="Bypass cache and re-fetch tools."),
     ] = False,
 ) -> None:
     """List all available WebAPI tools on the server."""
-    cfg = _get_config()
-    client = _make_client(cfg, server)
+    cfg = _get_config(profile)
+    client = _make_client(cfg, server, profile)
 
     try:
         client.initialize()
@@ -284,10 +297,11 @@ def describe(
     ],
     pretty_print: _pretty_opt = False,
     server: ServerURL = None,
+    profile: ProfileOpt = None,
 ) -> None:
     """Show the full parameter schema for a tool."""
-    cfg = _get_config()
-    client = _make_client(cfg, server)
+    cfg = _get_config(profile)
+    client = _make_client(cfg, server, profile)
 
     try:
         client.initialize()
@@ -320,10 +334,11 @@ def call(
     body: BodyOpt = None,
     pretty_print: _pretty_opt = False,
     server: ServerURL = None,
+    profile: ProfileOpt = None,
 ) -> None:
     """Invoke an MCP tool (WebAPI endpoint)."""
-    cfg = _get_config()
-    client = _make_client(cfg, server)
+    cfg = _get_config(profile)
+    client = _make_client(cfg, server, profile)
 
     arguments: dict = {}
 
@@ -360,7 +375,7 @@ def call(
     format_tool_result(result, pretty_print=pretty_print)
 
     if result.get("isError"):
-        _describe_tool_after_close(cfg, server, tool, pretty_print)
+        _describe_tool_after_close(cfg, server, tool, pretty_print, profile)
 
 
 # ------------------------------------------------------------------
@@ -428,18 +443,20 @@ def profiles_remove(
 @app.command()
 def whoami(
     server: ServerURL = None,
+    profile: ProfileOpt = None,
 ) -> None:
     """Show the current session and server info."""
-    cfg = _get_config()
-    profile = cfg.get()
-    assert profile is not None
-    client = _make_client(cfg, server)
+    cfg = _get_config(profile)
+    key = profile or cfg.current_profile
+    prof = cfg.get(key)
+    assert prof is not None
+    client = _make_client(cfg, server, profile)
 
     try:
         result = client.initialize()
         info = result.get("serverInfo", {})
-        console.print(f"Profile:  [bold]{cfg.current_profile}[/bold]")
-        console.print(f"Server:   {profile.server_url}")
+        console.print(f"Profile:  [bold]{key}[/bold]")
+        console.print(f"Server:   {prof.server_url}")
         console.print(f"App:      {info.get('title', '?')} ({info.get('version', '?')})")
         console.print(f"Protocol: {result.get('protocolVersion', '?')}")
     except McpError as exc:
