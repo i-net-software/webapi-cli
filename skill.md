@@ -79,6 +79,8 @@ webapi login --server https://dev.example.com --token ... --profile dev
 webapi login --server https://production.example.com --token ... --profile prod
 webapi profiles use prod
 webapi discover -s https://dev.example.com  # One-off server override
+webapi discover --profile dev               # One-off profile override (any command)
+webapi call ticket__ticket__get --params '{"id":"1"}' -P prod
 ```
 
 ## Tool Naming Convention
